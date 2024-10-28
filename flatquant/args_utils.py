@@ -17,6 +17,10 @@ supported_models = [
             './modelzoo/llama-3.1-instruct/llama-3.1-instruct-8b', 
             './modelzoo/Qwen2.5-32B-Instruct', 
             './modelzoo/Qwen2.5-7B-Instruct', 
+            "/home/workspace/model/meta-llama-3-8b-instruct",
+            "/home/workspace/model/MiniCPM-V-1B-sft-v2-1B",
+            "/home/workspace/model/MiniCPM-Llama3-V-2_5",
+            "/home/workspace/model/minicpm-v-2_6"
             ]
 # supported_models = [
 #             'meta-llama/Llama-2-7b-hf',

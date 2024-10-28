@@ -329,3 +329,13 @@ def apply_flatquant_to_qwen(args, model):
         # mlp
         model.model.layers[layer].mlp = FlatQuantQwen2MLP(args, model.model.layers[layer].mlp)
     return model
+
+def apply_flatquant_to_minicpmv(args, model):
+    skip_initialization()
+    # Replace module with FlatQuant version
+    for layer in range(model.config.num_hidden_layers):
+        # attn
+        model.llm.model.layers[layer].self_attn = FlatQuantQwen2Attention(args, model.llm.model.layers[layer].self_attn)
+        # mlp
+        model.llm.model.layers[layer].mlp = FlatQuantQwen2MLP(args, model.llm.model.layers[layer].mlp)
+    return model

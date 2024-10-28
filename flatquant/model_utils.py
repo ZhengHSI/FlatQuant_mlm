@@ -71,6 +71,31 @@ def get_opt(model_name):
     logging.info(f'---> Loading {model_name} Model with seq_len: {model.seqlen}')
     raise NotImplementedError("Post-processing for OPT model is not implemented yet.")
 
+def get_MiniCPMV(model_name):
+    skip_initialization()
+    model = transformers.AutoModel.from_pretrained(model_name, 
+                                                    trust_remote_code=True,
+                                                    attn_implementation='eager', 
+                                                    torch_dtype='auto',        
+                                                    device_map=None) 
+    model.processor = transformers.AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
+    model.seqlen = 512
+    logging.info(f'---> Loading {model_name} Model with seq_len: {model.seqlen}')
+    # from flatquant.model_tools.qwen_utils import apply_flatquant_to_minicpmv
+    from flatquant.model_tools.llama_utils import apply_flatquant_to_minicpmv
+    return model, apply_flatquant_to_minicpmv
+
+def get_llava(model_name):
+    skip_initialization()
+    model = transformers.LlavaForConditionalGeneration.from_pretrained(
+        model_name, 
+        torch_dtype=torch.float16, 
+        low_cpu_mem_usage=True, 
+    )
+    model.seqlen = 2048
+    logging.info(f'---> Loading {model_name} Model with seq_len: {model.seqlen}')
+    from flatquant.model_tools.llama_utils import apply_flatquant_to_llava
+    return model, apply_flatquant_to_llava
 
 # Unified model loading function
 def get_model(model_name, hf_token=None):
@@ -80,6 +105,8 @@ def get_model(model_name, hf_token=None):
         return get_llama(model_name, hf_token)
     elif 'Qwen2' in model_name:
         return get_qwen2(model_name, hf_token)
+    elif "MiniCPM-V" in model_name or "MiniCPM-Llama3-V-2_5" in model_name or "minicpm-v" in model_name:
+        return get_MiniCPMV(model_name)
     else:
         raise ValueError(f'Unknown model {model_name}')
 

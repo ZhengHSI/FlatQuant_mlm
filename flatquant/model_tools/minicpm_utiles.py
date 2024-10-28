@@ -218,8 +218,7 @@ class FlatQuantLlamaAttention(LlamaAttention):
                     "with a layer index."
                 )
             kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
-        # cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-        cos, sin = self.rotary_emb(value_states, position_ids)
+        cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
         # ---- here do the quantization ----
         if not self._ori_mode:
@@ -325,17 +324,6 @@ class FlatQuantLlamaAttention(LlamaAttention):
             self.o_trans.to_eval_mode()
 
 
-def apply_flatquant_to_llama(args, model):
-    skip_initialization()
-    # Replace module with FlatQuant version
-    for layer in range(model.config.num_hidden_layers):
-        # attn
-        model.model.layers[layer].self_attn = FlatQuantLlamaAttention(args, model.model.layers[layer].self_attn)
-        # mlp
-        model.model.layers[layer].mlp = FlatQuantLlamaMLP(args, model.model.layers[layer].mlp)
-    return model
-
-
 def apply_flatquant_to_minicpmv(args, model):
     skip_initialization()
     # Replace module with FlatQuant version
@@ -344,14 +332,4 @@ def apply_flatquant_to_minicpmv(args, model):
         model.llm.model.layers[layer].self_attn = FlatQuantLlamaAttention(args, model.llm.model.layers[layer].self_attn)
         # mlp
         model.llm.model.layers[layer].mlp = FlatQuantLlamaMLP(args, model.llm.model.layers[layer].mlp)
-    return model
-
-def apply_flatquant_to_llava(args, model):
-    skip_initialization()
-    # Replace module with FlatQuant version
-    for layer in range(model.language_model.config.num_hidden_layers):
-        # attn
-        model.language_model.model.layers[layer].self_attn = FlatQuantLlamaAttention(args, model.language_model.model.layers[layer].self_attn)
-        # mlp
-        model.language_model.model.layers[layer].mlp = FlatQuantLlamaMLP(args, model.language_model.model.layers[layer].mlp)
     return model

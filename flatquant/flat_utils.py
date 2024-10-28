@@ -29,7 +29,7 @@ def reparameterize_ln(ln, trans):
 
 def reparameterize_model(model):
     for idx in range(model.config.num_hidden_layers):
-        layer = model.model.layers[idx]
+        layer = model.llm.model.layers[idx]
         layer.self_attn.reparameterize()
         layer.mlp.reparameterize()
         # fuse per-channel scaling to layernorm
@@ -42,8 +42,8 @@ def reparameterize_model(model):
 
 def save_parametrized_checkpoint(model, args):
     quanted_parameters = {}
-    for i in range(len(model.model.layers)):
-        layer = model.model.layers[i]
+    for i in range(len(model.llm.model.layers)):
+        layer = model.llm.model.layers[i]
         quanted_parameters[i] = layer.state_dict()
     torch.save(quanted_parameters, os.path.join(args.exp_dir, f"parametrized_paras.pth"))
     logging.info("saved paramaters at {}".format(os.path.join(args.exp_dir, f"parametrized_paras.pth")))
@@ -54,7 +54,7 @@ def load_flat_parameters(args, model, path=None):
         flat_parameters = torch.load(os.path.join(args.exp_dir, f"flat_parameters.pth"))
     else:
         flat_parameters = torch.load(os.path.join(path, f"flat_parameters.pth"))
-    layers = model.model.layers
+    layers = model.llm.model.layers
     
     for i in range(len(flat_parameters.keys())):
         flat_param = flat_parameters[i]
@@ -64,8 +64,8 @@ def load_flat_parameters(args, model, path=None):
 
 def save_flat_matrices(args, model):
     flat_matrices = {}
-    for i in range(len(model.model.layers)):
-        layer = model.model.layers[i]
+    for i in range(len(model.llm.model.layers)):
+        layer = model.llm.model.layers[i]
         layer.self_attn.rep_matrix_only()
         layer.mlp.rep_matrix_only()
         paras_name = ["trans.matrix", "trans.diag_scale", "clip_factor_w", "clip_factor_a"]
@@ -79,7 +79,7 @@ def load_flat_matrices(args, model, path=None):
         flat_parameters = torch.load(os.path.join(args.exp_dir, f"flat_matrices.pth"))
     else:
         flat_parameters = torch.load(os.path.join(path, f"flat_matrices.pth"))
-    layers = model.model.layers
+    layers = model.llm.model.layers
     
     for i in range(len(flat_parameters.keys())):
         flat_param = flat_parameters[i]

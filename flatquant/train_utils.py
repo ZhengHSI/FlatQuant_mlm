@@ -27,11 +27,11 @@ def cali_flat_quant(args, model, dataloader, dev, logger):
         traincast = torch.cuda.amp.autocast
 
     # move embedding layer and first layer to target device
-    layers = model.model.layers
+    layers = model.llm.model.layers
     layers[0] = layers[0].to(dev)
-    model.model.embed_tokens = model.model.embed_tokens.to(dev)
-    if hasattr(model.model, "rotary_emb"):
-        model.model.rotary_emb = model.model.rotary_emb.to(dev)
+    model.llm.model.embed_tokens = model.llm.model.embed_tokens.to(dev)
+    if hasattr(model.llm.model, "rotary_emb"):
+        model.llm.model.rotary_emb = model.llm.model.rotary_emb.to(dev)
 
     # catch the first layer input
     inps = torch.zeros(
@@ -56,11 +56,13 @@ def cali_flat_quant(args, model, dataloader, dev, logger):
                 break
             try:
                 sample = batch[0]
+                # print(batch[0].shape)
                 model(sample.to(dev))
             except ValueError:
                 pass
     position_ids = cache["position_ids"]
-    attention_mask = cache["attention_mask"]
+    # print(position_ids.shape)
+    attention_mask = cache["attention_mask"][:, :, :, :model.seqlen]
     if attention_mask is not None:
         attention_mask_batch = attention_mask.repeat(args.cali_bsz, 1, 1, 1).float()
     else:
@@ -69,9 +71,9 @@ def cali_flat_quant(args, model, dataloader, dev, logger):
     # move embedding layer and first layer to cpu
     layers[0] = layers[0].module
     layers[0] = layers[0].cpu()
-    model.model.embed_tokens = model.model.embed_tokens.cpu()
-    if hasattr(model.model, "rotary_emb"):
-        model.model.rotary_emb = model.model.rotary_emb.cpu()
+    model.llm.model.embed_tokens = model.llm.model.embed_tokens.cpu()
+    if hasattr(model.llm.model, "rotary_emb"):
+        model.llm.model.rotary_emb = model.llm.model.rotary_emb.cpu()
     # raise ValueError("Only support for llama-2/Llama-3/qwen-2 now")
     torch.cuda.empty_cache()
 
@@ -98,6 +100,8 @@ def cali_flat_quant(args, model, dataloader, dev, logger):
         with torch.no_grad():
             for j in range(args.nsamples):
                 fp_outs[j] = layer(fp_inps[j].unsqueeze(0), attention_mask=attention_mask, position_ids=position_ids)[0]
+                # fp_outs[j] = layer(fp_inps[j].unsqueeze(0),1024)[0]
+
         layer.self_attn._ori_mode = False
         layer.mlp._ori_mode = False
         if args.diag_init == "sq_style":
