@@ -60,18 +60,18 @@ class SVDDecomposeTransMatrix(nn.Module):
         self.linear_u_left = nn.Linear(left_size, left_size, bias=False)
         self.linear_u_left.weight.data = get_init_weight(left_size).to(self.linear_u_left.weight)
         ## 修改 把cayley换成了householder,use_trivialization设置为true
-        self.linear_u_left = nn.utils.parametrizations.orthogonal(self.linear_u_left, orthogonal_map="householder", use_trivialization=True)
+        self.linear_u_left = nn.utils.parametrizations.orthogonal(self.linear_u_left, orthogonal_map="cayley", use_trivialization=False)
         self.linear_v_left = nn.Linear(left_size, left_size, bias=False)
         self.linear_v_left.weight.data = get_init_weight(left_size).to(self.linear_v_left.weight)
-        self.linear_v_left = nn.utils.parametrizations.orthogonal(self.linear_v_left, orthogonal_map="householder", use_trivialization=True)
+        self.linear_v_left = nn.utils.parametrizations.orthogonal(self.linear_v_left, orthogonal_map="cayley", use_trivialization=False)
         self.linear_diag_left = torch.nn.Parameter(torch.ones(left_size), requires_grad=True)
 
         self.linear_u_right = nn.Linear(right_size, right_size, bias=False)
         self.linear_u_right.weight.data = get_init_weight(right_size).to(self.linear_u_right.weight)
-        self.linear_u_right = nn.utils.parametrizations.orthogonal(self.linear_u_right, orthogonal_map="householder", use_trivialization=True)
+        self.linear_u_right = nn.utils.parametrizations.orthogonal(self.linear_u_right, orthogonal_map="cayley", use_trivialization=False)
         self.linear_v_right = nn.Linear(right_size, right_size, bias=False)
         self.linear_v_right.weight.data = get_init_weight(right_size).to(self.linear_v_right.weight)
-        self.linear_v_right = nn.utils.parametrizations.orthogonal(self.linear_v_right, orthogonal_map="householder", use_trivialization=True)
+        self.linear_v_right = nn.utils.parametrizations.orthogonal(self.linear_v_right, orthogonal_map="cayley", use_trivialization=False)
         self.linear_diag_right = torch.nn.Parameter(torch.ones(right_size), requires_grad=True)
 
         self.add_diag = add_diag

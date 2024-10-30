@@ -15,11 +15,11 @@ def main():
 
     model, apply_flatquant_to_model = model_utils.get_model(args.model, args.hf_token)
     model.eval()
-    tokenizer = transformers.AutoTokenizer.from_pretrained(args.model, use_fast=False, use_auth_token=args.hf_token)
+    tokenizer = transformers.AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
 
     # get calibration data
     trainloader = data_utils.get_loaders(
-        args, args.cali_dataset, nsamples=args.nsamples,
+        args, 'mme', nsamples=args.nsamples,
         seed=args.seed, model=args.model,
         seqlen=model.seqlen, eval_mode=False
     )
@@ -52,7 +52,8 @@ def main():
         model.to(utils.DEV)
     
     # Evaluating PPL
-    for eval_dataset in ["wikitext2", "c4"]:
+    # for eval_dataset in ["wikitext2", "c4"]:
+    for eval_dataset in ["wikitext2"]:
         logger.info(eval_dataset)
         testloader = data_utils.get_loaders(
                 args,
@@ -67,26 +68,26 @@ def main():
         logger.info(dataset_ppl)
 
 
-    if args.lm_eval:
-        import lm_eval
-        from lm_eval import utils as lm_eval_utils
-        from lm_eval.models.huggingface import HFLM
+    # if args.lm_eval:
+    #     import lm_eval
+    #     from lm_eval import utils as lm_eval_utils
+    #     from lm_eval.models.huggingface import HFLM
 
-        hflm = HFLM(pretrained=model, tokenizer=tokenizer, batch_size=args.lm_eval_batch_size)
+    #     hflm = HFLM(pretrained=model, tokenizer=tokenizer, batch_size=args.lm_eval_batch_size)
 
-        task_manager = lm_eval.tasks.TaskManager(include_path="./datasets/lm_eval_configs/tasks", include_defaults=False)
-        task_names = lm_eval_utils.pattern_match(args.tasks, task_manager.all_tasks)
-        results = {}
-        for task_name in task_names:
-            logger.info(f"Evaluating {task_name}...")
-            result = lm_eval.simple_evaluate(hflm, tasks=[task_name], batch_size=args.lm_eval_batch_size, task_manager=task_manager)['results']
-            result = result[task_name]
-            acc = round(result.get('acc_norm,none', result['acc,none']) * 100, 2)
-            results[task_name] = acc
-            logger.info(f"acc: {acc}%")
-        metric_vals = {task: result for task, result in results.items()}
-        metric_vals['acc_avg'] = round(sum(metric_vals.values()) / len(metric_vals.values()), 2)
-        logger.info(metric_vals)
+    #     task_manager = lm_eval.tasks.TaskManager(include_path="./datasets/lm_eval_configs/tasks", include_defaults=False)
+    #     task_names = lm_eval_utils.pattern_match(args.tasks, task_manager.all_tasks)
+    #     results = {}
+    #     for task_name in task_names:
+    #         logger.info(f"Evaluating {task_name}...")
+    #         result = lm_eval.simple_evaluate(hflm, tasks=[task_name], batch_size=args.lm_eval_batch_size, task_manager=task_manager)['results']
+    #         result = result[task_name]
+    #         acc = round(result.get('acc_norm,none', result['acc,none']) * 100, 2)
+    #         results[task_name] = acc
+    #         logger.info(f"acc: {acc}%")
+    #     metric_vals = {task: result for task, result in results.items()}
+    #     metric_vals['acc_avg'] = round(sum(metric_vals.values()) / len(metric_vals.values()), 2)
+    #     logger.info(metric_vals)
 
 
 if __name__ == '__main__':

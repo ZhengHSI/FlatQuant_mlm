@@ -79,7 +79,7 @@ def get_MiniCPMV(model_name):
                                                     torch_dtype='auto',        
                                                     device_map=None) 
     model.processor = transformers.AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
-    model.seqlen = 512
+    model.seqlen = 2048
     logging.info(f'---> Loading {model_name} Model with seq_len: {model.seqlen}')
     # from flatquant.model_tools.qwen_utils import apply_flatquant_to_minicpmv
     from flatquant.model_tools.llama_utils import apply_flatquant_to_minicpmv

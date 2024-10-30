@@ -81,7 +81,6 @@ def get_ptb_new(nsamples, seed, seqlen, tokenizer, eval_mode=False):
             trainloader.append((inp, tar))
         return trainloader
 
-
 def get_pile(nsamples, seed, seqlen, tokenizer):
     traindata = datasets.load_dataset("./datasets/pile-val-backup", split="validation")
     trainenc = tokenizer("\n\n".join(traindata['text'][:1000]), return_tensors='pt')
@@ -96,34 +95,68 @@ def get_pile(nsamples, seed, seqlen, tokenizer):
         trainloader.append((inp, tar))
     return trainloader
 
+# def get_mme(nsamples, seed, seqlen, processor):
+#     dataset = datasets.load_from_disk("/home/workspace/dataset/MME")["test"]
+#     dataset = dataset.shuffle(seed=seed)
+#     # rng = random.Random(42)
+#     samples, num_tokens = [], 0
+#     prompts_lists = []
+#     input_images_lists = []
+#     for index, _data in enumerate(dataset):
+#         promt = _data["question"]
+#         image = _data["image"]
+#         msgs = [{'role': 'user', 'content': "(<image>./</image>)\n"+ promt}]
+#         prompts_lists.append(processor.tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True))
+#         input_images_lists.append([image])
+#         if index >= nsamples:
+#             break
+#     inputs = processor(
+#         prompts_lists,
+#         input_images_lists,
+#         max_slice_nums=9,
+#         use_image_id=True,
+#         return_tensors="pt",
+#         max_length=8192
+#     )["input_ids"]
+#     trainloader = []
+#     import torch.nn.functional as F
+#     for i in range(inputs.size(0)):  # tensor.size(0) == 33
+#         inp = inputs.select(0, i).unsqueeze(0)  # 获取第 i 行并增加一个维度
+#         pad_size = seqlen - inp.size(1)
+#         # 在右侧填充，左边填充 0，右边填充 pad_size 个值
+#         inp = F.pad(inp, (pad_size,0), "constant", 0)
+#         tar = inp.clone()
+#         tar[:, :-1] = -100
+#         trainloader.append((inp, tar))
+#     return trainloader
+
 def get_mme(nsamples, seed, seqlen, processor):
+    import torch.nn.functional as F
     dataset = datasets.load_from_disk("/home/workspace/dataset/MME")["test"]
     dataset = dataset.shuffle(seed=seed)
-    # rng = random.Random(42)
+    rng = random.Random(42)
     samples, num_tokens = [], 0
-    prompts_lists = []
-    input_images_lists = []
+    inputs_list = []
     for index, _data in enumerate(dataset):
         promt = _data["question"]
         image = _data["image"]
         msgs = [{'role': 'user', 'content': "(<image>./</image>)\n"+ promt}]
-        prompts_lists.append(processor.tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True))
-        input_images_lists.append([image])
+        prompts = processor.tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
         if index >= nsamples:
             break
-    inputs = processor(
-        prompts_lists,
-        input_images_lists,
-        max_slice_nums=9,
-        use_image_id=True,
-        return_tensors="pt",
-        max_length=8192
-    )["input_ids"]
-    trainloader = []
+
+        inputs = processor(
+            prompts,
+            image,
+            return_tensors="pt",
+            max_length=8192
+        )["input_ids"]
     
-    import torch.nn.functional as F
-    for i in range(inputs.size(0)):  # tensor.size(0) == 33
-        inp = inputs.select(0, i).unsqueeze(0)  # 获取第 i 行并增加一个维度
+        inputs_list.append(inputs)
+
+    trainloader = []
+    for i in inputs_list:  # tensor.size(0) == 33
+        inp = inputs
         pad_size = seqlen - inp.size(1)
         # 在右侧填充，左边填充 0，右边填充 pad_size 个值
         inp = F.pad(inp, (pad_size,0), "constant", 0)

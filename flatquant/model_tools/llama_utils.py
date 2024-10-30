@@ -240,6 +240,7 @@ class FlatQuantLlamaAttention(LlamaAttention):
                 f" {attn_weights.size()}"
             )
 
+        attention_mask = attention_mask[:, :, :, :kv_seq_len]
         if attention_mask is not None:
             if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
                 raise ValueError(
@@ -334,7 +335,6 @@ def apply_flatquant_to_llama(args, model):
         # mlp
         model.model.layers[layer].mlp = FlatQuantLlamaMLP(args, model.model.layers[layer].mlp)
     return model
-
 
 def apply_flatquant_to_minicpmv(args, model):
     skip_initialization()

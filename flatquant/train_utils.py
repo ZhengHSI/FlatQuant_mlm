@@ -62,7 +62,8 @@ def cali_flat_quant(args, model, dataloader, dev, logger):
                 pass
     position_ids = cache["position_ids"]
     # print(position_ids.shape)
-    attention_mask = cache["attention_mask"][:, :, :, :model.seqlen]
+    attention_mask = cache["attention_mask"]
+    # attention_mask = cache["attention_mask"][:, :, :, :model.seqlen]
     if attention_mask is not None:
         attention_mask_batch = attention_mask.repeat(args.cali_bsz, 1, 1, 1).float()
     else:
